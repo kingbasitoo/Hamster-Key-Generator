@@ -11,7 +11,7 @@ async def generate_keys(games):
         client_id = str(uuid.uuid4())
 
         # Login to the game promo API
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(proxies=proxy) as client:
             response = await client.post(
                 'https://api.gamepromo.io/promo/login-client',
                 json={'appToken': app_token, 'clientId': client_id, 'clientOrigin': 'deviceid'}
