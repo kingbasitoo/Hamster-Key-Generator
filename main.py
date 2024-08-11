@@ -83,7 +83,25 @@ async def login(client_id, app_token, proxies, retries=5):
             return None
 
 async def emulate_progress(client_token, promo_id, proxies):
-    proxy = random.choice(proxies) if proxies else None
-    logger.info(f"Emulating progress for promo ID: {promo_id}")
-    async with
+    proxy = random.choice(proxies) if proxies else None
+    logger.info(f"Emulating progress for promo ID: {promo_id}")
+    async with httpx.AsyncClient(proxies=proxy, timeout=30.0) as client:
+        try:
+            response = await client.post(
+                '(link unavailable)',  # Replace with the correct URL
+                headers={'Authorization': f'Bearer {client_token}'},
+                json={'promoId': promo_id, 'eventId': str(uuid.uuid4()), 'eventOrigin': 'undefined'}
+            )
+            response.raise_for_status()
+            try:
+                data = response.json()
+            except json.JSONDecodeError as e:
+                logger.error(f"JSON decode error: {e}")
+                return None
+            return data['hasCode']
+        except httpx.HTTPStatusError as e:
+            logger.error(f"Failed to emulate progress: {e.response.json()}")
+        except Exception as e:
+            logger.error(f"Unexpected error during progress emulation: {e}")
+        return None
 ```There was a problem generating a response. Please try again later.
