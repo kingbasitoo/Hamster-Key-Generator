@@ -1,4 +1,3 @@
-```
 import asyncio
 import os
 import sys
@@ -6,19 +5,13 @@ import httpx
 import random
 import time
 import uuid
-import json
 from loguru import logger
 
-# Disable logging for httpx
 httpx_log = logger.bind(name="httpx").level("WARNING")
 logger.remove()
-logger.add(sink=sys.stdout, format="<white>{time:YYYY-MM-DD HH:mm:ss}</white>" 
-                                  " | <level>{level: <8}</level>" 
-                                  " | <cyan><b>{line}</b></cyan>" 
-                                  " - <white><b>{message}</b></white>")
+logger.add(sink=sys.stdout, format="<white>{time:YYYY-MM-DD HH:mm:ss}</white>" " | <level>{level: <8}</level>" " | <cyan><b>{line}</b></cyan>" " - <white><b>{message}</b></white>")
 logger = logger.opt(colors=True)
 
-# Game configuration
 games = {
     1: {
         'name': 'Riding Extreme 3D',
@@ -42,18 +35,14 @@ games = {
     }
 }
 
-# Constants
-EVENTS_DELAY = 20000 / 1000  # converting milliseconds to seconds
-MAX_LOGIN_ATTEMPTS = 5
-PROXY_FILE = 'proxy.txt'
+EVENTS_DELAY = 20000 / 1000
 
-# Load proxies from file
 async def load_proxies(file_path):
     try:
         if os.path.exists(file_path):
             with open(file_path, 'r') as file:
                 proxies = [line.strip() for line in file if line.strip()]
-                random.shuffle(proxies)  # Shuffle proxies to ensure randomness
+                random.shuffle(proxies)
                 return proxies
         else:
             logger.info(f"Proxy file {file_path} not found. No proxies will be used.")
@@ -62,19 +51,17 @@ async def load_proxies(file_path):
         logger.error(f"Error reading proxy file {file_path}: {e}")
         return []
 
-# Generate client ID
 async def generate_client_id():
     timestamp = int(time.time() * 1000)
     random_numbers = ''.join(str(random.randint(0, 9)) for _ in range(19))
     return f"{timestamp}-{random_numbers}"
 
-# Login to game
-async def login(client_id, app_token, proxies):
-    for attempt in range(MAX_LOGIN_ATTEMPTS):
+async def login(client_id, app_token, proxies, retries=5):
+    for attempt in range(retries):
         proxy = random.choice(proxies) if proxies else None
         async with httpx.AsyncClient(proxies=proxy, timeout=30.0) as client:
             try:
-                logger.info(f"Attempting to log in with client ID: {client_id} (Attempt {attempt + 1}/{MAX_LOGIN_ATTEMPTS})")
+                logger.info(f"Attempting to log in with client ID: {client_id} (Attempt {attempt + 1}/{retries})")
                 response = await client.post(
                     'https://api.gamepromo.io/promo/login-client',
                     json={'appToken': app_token, 'clientId': client_id, 'clientOrigin': 'deviceid'}
@@ -88,8 +75,15 @@ async def login(client_id, app_token, proxies):
                 logger.info(f"Login successful for client ID: {client_id}")
                 return data['clientToken']
             except httpx.HTTPStatusError as e:
-                logger.error(f"Failed to login (attempt {attempt + 1}/{MAX_LOGIN_ATTEMPTS}): {e.response.json()}")
+                logger.error(f"Failed to login (attempt {attempt + 1}/{retries}): {e.response.json()}")
             except Exception as e:
-                logger.error(f"Unexpected error during login (attempt {attempt + 1}/{MAX_LOGIN_ATTEMPTS}): {e}")
-            await asyncio.sleep(2)  #
+                logger.error(f"Unexpected error during login (attempt {attempt + 1}/{retries}): {e}")
+            await asyncio.sleep(2)
+            logger.error("Maximum login attempts reached. Returning None.")
+            return None
+
+async def emulate_progress(client_token, promo_id, proxies):
+    proxy = random.choice(proxies) if proxies else None
+    logger.info(f"Emulating progress for promo ID: {promo_id}")
+    async with
 ```There was a problem generating a response. Please try again later.
