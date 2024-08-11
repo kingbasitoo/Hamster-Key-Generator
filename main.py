@@ -13,7 +13,7 @@ async def generate_keys(games):
         # Login to the game promo API
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                '(link unavailable)',
+                'https://api.gamepromo.io/promo/login-client',
                 json={'appToken': app_token, 'clientId': client_id, 'clientOrigin': 'deviceid'}
             )
             response.raise_for_status()
@@ -22,7 +22,7 @@ async def generate_keys(games):
         # Emulate progress and generate a key
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                '(link unavailable)',
+                'https://api.gamepromo.io/promo/create-code',
                 headers={'Authorization': f'Bearer {client_token}'},
                 json={'promoId': promo_id}
             )
