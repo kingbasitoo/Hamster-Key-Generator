@@ -1,4 +1,19 @@
-# Games Key Generator
+import asyncio
+import os
+import sys
+import httpx
+import random
+import time
+import uuid
+from loguru import logger
+
+httpx_log = logger.bind(name="httpx").level("WARNING")
+logger.remove()
+logger.add(sink=sys.stdout, format="<white>{time:YYYY-MM-DD HH:mm:ss}</white>"
+                                   " | <level>{level: <8}</level>"
+                                   " | <cyan><b>{line}</b></cyan>"
+                                   " - <white><b>{message}</b></white>")
+logger = logger.opt(colors=True)
 
 games = {
     1: {
@@ -23,19 +38,62 @@ games = {
     }
 }
 
-client_id = "https://api.gamepromo.io/promo/login-client"
+EVENTS_DELAY = 20000 / 1000
 
-def generate_keys():
-    keys = {}
-    for game_id, game_info in games.items():
-        keys[game_info['name']] = {
-            'appToken': game_info['appToken'],
-            'promoId': game_info['promoId'],
-            'client_id': client_id
-        }
-    return keys
+async def load_proxies(file_path):
+    try:
+        if os.path.exists(file_path):
+            with open(file_path, 'r') as file:
+                proxies = [line.strip() for line in file if line.strip()]
+                random.shuffle(proxies)
+                return proxies
+        else:
+            logger.info(f"Proxy file {file_path} not found. No proxies will be used.")
+            return []
+    except Exception as e:
+        logger.error(f"Error reading proxy file {file_path}: {e}")
+        return []
 
-if __name__ == "__main__":
-    generated_keys = generate_keys()
-    for game, info in generated_keys.items():
-        print(f"Game: {game}, App Token: {info['appToken']}, Promo ID: {info['promoId']}, Client ID: {info['client_id']}")
+async def generate_client_id():
+    timestamp = int(time.time() * 1000)
+    random_numbers = ''.join(str(random.randint(0, 30)) for _ in range(30))
+    return f"{timestamp}-{random_numbers}"
+
+async def login(client_id, app_token, proxies, retries=5):
+    for attempt in range(retries):
+        proxy = random.choice(proxies) if proxies else None
+        async with httpx.AsyncClient(proxies=proxy) as client:
+            try:
+                logger.info(f"Attempting to log in with client ID: {client_id} (Attempt {attempt + 1}/{retries})")
+                response = await client.post(
+                    'https://api.gamepromo.io/promo/login-client',
+                    json={'appToken': app_token, 'clientId': client_id, 'clientOrigin': 'deviceid'}
+                )
+                response.raise_for_status()
+                data = response.json()
+                logger.info(f"Login successful for client ID: {client_id}")
+                return data['clientToken']
+            except httpx.HTTPStatusError as e:
+                logger.error(f"Failed to login (attempt {attempt + 1}/{retries}): {e.response.json()}")
+            except Exception as e:
+                logger.error(f"Unexpected error during login (attempt {attempt + 1}/{retries}): {e}")
+        await asyncio.sleep(2)
+    logger.error("Maximum login attempts reached. Returning None.")
+    return None
+
+async def emulate_progress(client_token, promo_id, proxies):
+    proxy = random.choice(proxies) if proxies else None
+    logger.info(f"Emulating progress for promo ID: {promo_id}")
+    async with httpx.AsyncClient(proxies=proxy) as client:
+        response = await client.post(
+            'https://api.gamepromo.io/promo/register-event',
+            headers={'Authorization': f'Bearer {client_token}'},
+            json={'promoId': promo_id, 'eventId': str(uuid.uuid4()), 'eventOrigin': 'undefined'}
+        )
+        response.raise_for_status()
+        data = response.json()
+        return data['hasCode']
+
+async def generate_key(client_token, promo_id, proxies):
+    # Implementation for generating the key goes here
+    pass
