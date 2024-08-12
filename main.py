@@ -10,30 +10,30 @@ from loguru import logger
 httpx_log = logger.bind(name="httpx").level("WARNING")
 logger.remove()
 logger.add(sink=sys.stdout, format="<white>{time:YYYY-MM-DD HH:mm:ss}</white>"
-                                   " | <level>{level: <8}</level>"
-                                   " | <cyan><b>{line}</b></cyan>"
-                                   " - <white><b>{message}</b></white>")
+                   " | <level>{level: <8}</level>"
+                   " | <cyan><b>{line}</b></cyan>"
+                   " - <white><b>{message}</b></white>")
 logger = logger.opt(colors=True)
 
 games = {
     1: {
         'name': 'Riding Extreme 3D',
-        'appToken': 'd28721be-fd2d-4b45-869e-9f253b554e50',
+        'appToken': 'd28721be-fd2d-4b45-869e-9f253b554e50', 
         'promoId': '43e35910-c168-4634-ad4f-52fd764a843f',
     },
     2: {
         'name': 'Chain Cube 2048',
-        'appToken': 'd1690a07-3780-4068-810f-9b5bbf2931b2',
+        'appToken': 'd1690a07-3780-4068-810f-9b5bbf2931b2', 
         'promoId': 'b4170868-cef0-424f-8eb9-be0622e8e8e3',
     },
     3: {
         'name': 'My Clone Army',
-        'appToken': '74ee0b5b-775e-4bee-974f-63e7f4d5bacb',
+        'appToken': '74ee0b5b-775e-4bee-974f-63e7f4d5bacb', 
         'promoId': 'fe693b26-b342-4159-8808-15e3ff7f8767',
     },
     4: {
         'name': 'Train Miner',
-        'appToken': '82647f43-3f87-402d-88dd-09a90025313f',
+        'appToken': '82647f43-3f87-402d-88dd-09a90025313f', 
         'promoId': 'c4480ac7-e178-4973-8061-9ed5b2e17954',
     }
 }
@@ -95,5 +95,21 @@ async def emulate_progress(client_token, promo_id, proxies):
         return data['hasCode']
 
 async def generate_key(client_token, promo_id, proxies):
-    # Implementation for generating the key goes here
-    pass
+    # Placeholder - you'll need to implement the key generation logic
+    print(f"Generating key for promo ID: {promo_id}") 
+
+async def main():
+    proxies = await load_proxies("proxies.txt") # Replace 'proxies.txt' if needed
+
+    for game_id, game_data in games.items():
+        logger.info(f"Processing game: {game_data['name']}")
+        client_id = await generate_client_id()
+        client_token = await login(client_id, game_data['appToken'], proxies)
+
+        if client_token:
+            has_code = await emulate_progress(client_token, game_data['promoId'], proxies)
+            if has_code:
+                await generate_key(client_token, game_data['promoId'], proxies) 
+
+if __name__ == '__main__':
+    asyncio.run(main())
